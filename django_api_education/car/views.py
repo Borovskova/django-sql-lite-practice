@@ -8,7 +8,7 @@ import json
 from .models import Car
 
 
-def getCarsList(request):
+def get_cars_list(request):
     limit = 10
     limit_param = request.GET.get("limit")
     if limit_param is not None:
@@ -23,7 +23,7 @@ def getCarsList(request):
 
 
 @csrf_exempt
-def actionWithCar(request, id=None):
+def action_with_car(request, id=None):
     dto = None
     if request.method == "POST" or request.method == "PATCH":
         if "application/json" in request.content_type:
@@ -34,26 +34,25 @@ def actionWithCar(request, id=None):
                 "model": data.get("model"),
                 "year": data.get("year"),
             }
-            return createCar(dto) if request.method == "POST" else updateCar(id, dto)
+            return create_car(dto) if request.method == "POST" else update_car(id, dto)
         else:
             return JsonResponse({"error": "Unsupported content type"}, status=415)
     elif request.method == "GET":
 
-        return getCar(id)
+        return get_car(id)
     elif request.method == "DELETE":
 
-        return deleteCar(id)
+        return delete_car(id)
     else:
 
-        return HttpResponse("Method is not exist", status=404, reason="Not found")
+        return HttpResponse("Method is not implemented", status=400, reason="Invalid HTTP method")
 
 
-def createCar(dto):
-    for key, value in dto.items():
-        if value == None:
-            return JsonResponse(
-                {"error": "Make, model and year is required fields"}, status=400
-            )
+def create_car(dto):
+    if not all(dto.values()):
+        return JsonResponse(
+            {"error": "Make, model and year is required fields"}, status=400
+        )
     try:
         new_car = Car.objects.create(**dto)
         new_car.save()
@@ -62,9 +61,9 @@ def createCar(dto):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-def getCar(id):
+def get_car(id):
     if id == None:
-        return HttpResponse("ID parametr is required", status=404, reason="Not found")
+        return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
     try:
         car_data = Car.objects.get(id=id)
 
@@ -76,9 +75,48 @@ def getCar(id):
         return JsonResponse({"error": "Car not exist"}, status=404)
 
 
-def updateCar(id, dto):
-    return JsonResponse({})
+def update_car(id, dto):
+    if id == None:
+        return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
+    elif not any(dto.values()):
+        return HttpResponse(
+            "You should change at least one field", status=400, reason="Nothing to save"
+        )
+    try:
+        dto_filtered = dto.copy()
+        #or the same
+        # dto_filtered = dict(dto)
+        for key, value in dto.items():
+            if value is None:
+               del dto_filtered[key]
+      
+        Car.objects.filter(id=id).update(**dto_filtered)
+          
+        return JsonResponse(
+                {"status": "success", "carId": id}, status=200
+        )
+    
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
-def deleteCar(id):
-    return JsonResponse({})
+
+def delete_car(id):
+    if id == None:
+     return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
+    
+    try:
+        car = Car.objects.get(id=id)
+        if car.user_owners.exists():
+            return JsonResponse(
+                {"error": "Car cannot be deleted, as it is associated with users"},
+                status=400
+            )
+        car.delete()
+        return JsonResponse({"status": "success", "deletedCarId": id}, status=200)
+    
+    except Car.DoesNotExist:
+        return JsonResponse({"error": "Car not found"}, status=404)
+    
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
