@@ -45,7 +45,9 @@ def action_with_car(request, id=None):
         return delete_car(id)
     else:
 
-        return HttpResponse("Method is not implemented", status=400, reason="Invalid HTTP method")
+        return HttpResponse(
+            "Method is not implemented", status=400, reason="Invalid HTTP method"
+        )
 
 
 def create_car(dto):
@@ -63,7 +65,9 @@ def create_car(dto):
 
 def get_car(id):
     if id == None:
-        return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
+        return HttpResponse(
+            "ID parametr is required", status=400, reason="Invalid ID format"
+        )
     try:
         car_data = Car.objects.get(id=id)
 
@@ -77,46 +81,47 @@ def get_car(id):
 
 def update_car(id, dto):
     if id == None:
-        return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
+        return HttpResponse(
+            "ID parametr is required", status=400, reason="Invalid ID format"
+        )
     elif not any(dto.values()):
         return HttpResponse(
             "You should change at least one field", status=400, reason="Nothing to save"
         )
     try:
         dto_filtered = dto.copy()
-        #or the same
+        # or the same
         # dto_filtered = dict(dto)
         for key, value in dto.items():
             if value is None:
-               del dto_filtered[key]
-      
+                del dto_filtered[key]
+
         Car.objects.filter(id=id).update(**dto_filtered)
-          
-        return JsonResponse(
-                {"status": "success", "carId": id}, status=200
-        )
-    
+
+        return JsonResponse({"status": "success", "carId": id}, status=200)
+
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
 
-
 def delete_car(id):
     if id == None:
-     return HttpResponse("ID parametr is required", status=400, reason="Invalid ID format")
-    
+        return HttpResponse(
+            "ID parametr is required", status=400, reason="Invalid ID format"
+        )
+
     try:
         car = Car.objects.get(id=id)
         if car.user_owners.exists():
             return JsonResponse(
                 {"error": "Car cannot be deleted, as it is associated with users"},
-                status=400
+                status=400,
             )
         car.delete()
         return JsonResponse({"status": "success", "deletedCarId": id}, status=200)
-    
+
     except Car.DoesNotExist:
         return JsonResponse({"error": "Car not found"}, status=404)
-    
+
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
