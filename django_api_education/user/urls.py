@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 
 from . import views
+from .consumers import UserConsumer
 
 urlpatterns = [
     path("", views.action_with_user),
@@ -8,4 +9,5 @@ urlpatterns = [
     path("login", views.user_login, name="login"),
     path("list", views.get_users_list, name="users"),
     path("<str:id>", views.action_with_user),
+    path('ws/user/', UserConsumer.as_asgi()),
 ]

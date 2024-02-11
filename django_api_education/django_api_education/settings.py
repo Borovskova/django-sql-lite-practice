@@ -31,6 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,7 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "user",
-    "car"
+    "car",
 ]
 
 MIDDLEWARE = [
@@ -69,7 +71,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "django_api_education.wsgi.application"
+ASGI_APPLICATION = "django_api_education.asgi.application"
+
 
 
 # Database
@@ -80,6 +83,12 @@ DATABASES = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
+}
+
+CHANNELS_LAYERS = {
+  'default': {
+    'BACKEND': 'channels.layers.InMemoryChannelLayer'
+  }
 }
 
 

@@ -1,6 +1,4 @@
-from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.contrib.auth import authenticate, login
@@ -10,7 +8,7 @@ import json
 
 from car.models import Car
 from .models import User
-
+from .decorators import login_required_with_error_message
 
 @csrf_exempt
 def user_register(request):
@@ -63,7 +61,8 @@ def user_login(request):
         user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
-            return JsonResponse({"status": "success", "userId": user.id}, status=200)
+            token = request.META.get('CSRF_COOKIE', None)
+            return JsonResponse({"status": "success", "user_id": user.id, "crf_token": token}, status=200)
         else:
             return JsonResponse({"error": "Invalid credentials"}, status=401)
     else:
@@ -82,8 +81,7 @@ def get_users_list(request, limit=10):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
-@login_required
+@login_required_with_error_message
 def action_with_user(request, id=None):
     dto = None
     if request.method == "PATCH":
