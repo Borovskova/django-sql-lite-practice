@@ -10,6 +10,7 @@ from car.models import Car
 from .models import User
 from .decorators import login_required_with_error_message
 
+
 @csrf_exempt
 def user_register(request):
     if request.method == "POST":
@@ -61,8 +62,11 @@ def user_login(request):
         user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
-            token = request.META.get('CSRF_COOKIE', None)
-            return JsonResponse({"status": "success", "user_id": user.id, "crf_token": token}, status=200)
+            token = request.META.get("CSRF_COOKIE", None)
+            return JsonResponse(
+                {"status": "success", "user_id": user.id, "crf_token": token},
+                status=200,
+            )
         else:
             return JsonResponse({"error": "Invalid credentials"}, status=401)
     else:
@@ -80,6 +84,7 @@ def get_users_list(request, limit=10):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
 
 @login_required_with_error_message
 def action_with_user(request, id=None):

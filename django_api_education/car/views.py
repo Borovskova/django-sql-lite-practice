@@ -24,6 +24,7 @@ def get_cars_list(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
 @csrf_exempt
 def action_with_car(request, id=None):
     dto = None
@@ -58,25 +59,21 @@ def create_car(dto):
             {"error": "Make, model and year is required fields"}, status=400
         )
     try:
-        new_car = Car.objects.create(**dto)
-        new_car.save()
+        # new_car = Car.objects.create(**dto)
+        # new_car.save()
         subscribers = asyncio.run(get_subscribers())
-        for user_id in subscribers:
-            print(user_id)
-            scope = {
-                    "type": "websocket",
-                    "path": "/ws/user",
-                    "headers": [
-                        (b"host", b"localhost:8000"),
-                        # other headers...
-                    ],
-                    # other details...
-                }
-            # user_connection = asyncio.run(UserConsumer().get_user_connection(scope,user_id))
-            # if user_connection:
-            asyncio.run(UserConsumer().send_message({"event": "new_car_added", "carId": new_car.id}))
-        print(subscribers, 'jjjj')
-        return  JsonResponse({"status": "success", "carId": new_car.id}, status=200)
+        for user in subscribers:
+            if user["connection"]:
+                for user in subscribers:
+                    if user["connection"]:
+                        asyncio.run(
+                            UserConsumer().send_message(
+                                user["connection"],
+                                {"event": "new_car_added", "carId": "id"},
+                            )
+                        )
+
+        return JsonResponse({"status": "success", "carId": "id"}, status=200)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
@@ -130,7 +127,7 @@ def delete_car(id):
 
     try:
         car = Car.objects.get(id=id)
-        if car.user_owners.exists():
+        if car.users_owners.exists():
             return JsonResponse(
                 {"error": "Car cannot be deleted, as it is associated with users"},
                 status=400,
@@ -143,12 +140,14 @@ def delete_car(id):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-    
+
+
 async def get_subscribers():
-    redis = await aioredis.from_url('redis://localhost')
-    subscribers = await redis.smembers('new_car_subscribers')
-    # subscribers = await redis.get('new_car_subscribers')
-    subscribers_ids = [int(subscriber) for subscriber in subscribers]
+    redis = await aioredis.from_url("redis://localhost")
+    subscribers = await redis.smembers("new_car_subscribers")
+    subscribers_data = []
+    for subscriber in subscribers:
+        subscribers_data.append(json.loads(subscriber))
     await redis.close()
 
-    return subscribers_ids
+    return subscribers_data
